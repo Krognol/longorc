@@ -47,7 +47,7 @@ method message*(p: UDPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
             description: first.fields["definition"].str & "\n```\n" & first.fields["example"].str & "\n```",
             footer: footer,
             color: Color,
-            fields: @[]
+                fields: @[]
         )
         asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
         
