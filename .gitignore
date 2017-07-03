@@ -1,2 +1,3 @@
-./nimcache/*
+.nimcache/*
 *.exe
+.vscode/*
