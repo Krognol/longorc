@@ -42,9 +42,12 @@ method message*(p: UDPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
             url: "http://www.urbandictionary.com/define.php?term=" & encodeUrl(word),
             icon_url: "http://urbandictionary.com/favicon.ico"
         )
+        var description = first.fields["definition"].str 
+        if description.len > 1000:
+            description = description[0..800] & "... Read the full definition at urbandictionary.com" & "\n```\n" & first.fields["example"].str & "\n```"
         let embed = Embed(
             author: author,
-            description: first.fields["definition"].str & "\n```\n" & first.fields["example"].str & "\n```",
+            description: description,
             footer: footer,
             color: Color,
                 fields: @[]
