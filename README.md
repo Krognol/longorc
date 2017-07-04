@@ -11,7 +11,7 @@ Documentation
 | Command       | Arg           | Desc  | Mod command |
 | ------------- |:-------------:| :-----:| :----: |
 | .!iroll      | integer number | Rolls a random integer between 0..n | false |
-| .!froll      | floating point number | Rolls a random FPN nbetween 0.0..n | false |
+| .!froll      | floating point number | Rolls a random FPN between 0.0..n | false |
 | .!d6 | -- | Rolls a 6 sided die | false |
 | .!anime | name | Anilist.co entry on anime | false |
 | .!manga | name | Anilist.co entry on manga | false |
@@ -29,3 +29,5 @@ Documentation
 | .!gfy trending | -- | Looks up trending Gfycats | false |
 | .!gfycat user | name | Looks up Gfycat user | false |
 | .!wolfram | query | Wolfram\|Alpha query result | false |
+| .!fm | username, or nothing | Looks up last.fm user's last played, and currently playing track. If no username is given takes from local cache | false |
+| .!fm set | username | Sets a last.fm username in the local cache | false |
