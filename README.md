@@ -28,3 +28,4 @@ Documentation
 | .!gfy tags | -- | Looks up popular Gfycat tags | false |
 | .!gfy trending | -- | Looks up trending Gfycats | false |
 | .!gfycat user | name | Looks up Gfycat user | false |
+| .!wolfram | query | Wolfram\|Alpha query result | false |
