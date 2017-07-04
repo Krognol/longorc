@@ -11,7 +11,8 @@ import ./src/longorc,
             eval/evalplugin,
             gfycat/gfy,
             wiktionary/wik,
-            wolfram/wolfram
+            wolfram/wolfram,
+            lastfm/lastfm
         ],
         asyncdispatch, tables, discord
  
@@ -28,6 +29,7 @@ bot.registerPlugin(orc, EvalPlugin())
 bot.registerPlugin(orc, newGfycatPlugin("gfycat client id", "gfycat client secret"))
 bot.registerPlugin(orc, newWiktionaryPlugin("wordnik api key"))
 bot.registerPlugin(orc, newWolframPlugin("app id"))
+bot.registerPlugin(orc, newLastFMPlugin("last.fm api key"))
 
 proc orcReady(s: Session, m: Ready) =
     s.updateStreamingStatus(0, ".!help", "")
