@@ -9,7 +9,7 @@ Documentation
 # Commands
 
 | Command       | Arg           | Desc  | Mod command |
-| ------------- |:-------------:| -----:| :----: |
+| ------------- |:-------------:| :-----:| :----: |
 | .!iroll      | integer number | Rolls a random integer between 0..n | false |
 | .!froll      | floating point number | Rolls a random FPN nbetween 0.0..n | false |
 | .!d6 | -- | Rolls a 6 sided die | false |
