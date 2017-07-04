@@ -131,7 +131,9 @@ method name*(s: OrcDiscord): string {.inline, gcsafe.} = "Discord"
 method isMe*(s: OrcDiscord, m: OrcMessage): bool {.inline.} = m.user().id() == s.session.cache.me.id
 method isModerator*(s: OrcDiscord, m: OrcMessage): bool {.inline.} = 
     let perms = s.userChannelPermissions(m.user().id(), m.channel())
-    result = ((perms and ord(permAll)) == ord(permAll)) or ((perms and ord(permAllChannel)) == ord(permAllChannel))
+    result = ((perms and permAll) == permAll) or 
+        ((perms and permAllChannel) == permAllChannel) or
+        ((perms and permManageGuild) == permManageGuild)
 
 method sendMessage*(s: OrcDiscord, channel: string, message: string) {.inline.} = asyncCheck s.session.channelMessageSend(channel, message)
 method prefix*(s: OrcDiscord): string {.inline.} = ".!"

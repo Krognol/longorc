@@ -10,7 +10,8 @@ import ./src/longorc,
             weeb/anilist,
             eval/evalplugin,
             gfycat/gfy,
-            wiktionary/wik
+            wiktionary/wik,
+            wolfram/wolfram
         ],
         asyncdispatch, tables, discord
  
@@ -21,11 +22,12 @@ bot.registerPlugin(orc, UserInfoPlugin())
 bot.registerPlugin(orc, Msgmanager())
 bot.registerPlugin(orc, CowSayPlugin())
 bot.registerPlugin(orc, RNGPlugin())
-bot.registerPlugin(orc, UDPlugin()) 
+bot.registerPlugin(orc, UDPlugin())
 bot.registerPlugin(orc, newAnilistPlugin("anilist client id", "anilist client secret"))
 bot.registerPlugin(orc, EvalPlugin())
 bot.registerPlugin(orc, newGfycatPlugin("gfycat client id", "gfycat client secret"))
 bot.registerPlugin(orc, newWiktionaryPlugin("wordnik api key"))
+bot.registerPlugin(orc, newWolframPlugin("app id"))
 
 proc orcReady(s: Session, m: Ready) =
     s.updateStreamingStatus(0, ".!help", "")
