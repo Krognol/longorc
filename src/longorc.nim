@@ -203,7 +203,7 @@ method message*(p: HelpPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         if s.name() == "Discord":
             var ret = "```" & helpSeq.join("\n") & "```"
             if ret.len >= 500: 
-                ret = "All commands can be found here <https://gist.github.com/Krognol/a380b589ed23db74e8a744fab7e439a6>"
+                ret = "All commands can be found here <https://github.com/Krognol/longorc>"
             s.sendMessage(m.channel(), ret)
 
 proc newBot*(): Bot =
@@ -227,7 +227,7 @@ method registerService*(b: Bot, s: Service) {.base.} =
     b.registerPlugin(s, HelpPlugin())
 
 proc newDiscordService*(token: string): OrcDiscord =
-    var ses = NewSession(token)
+    var ses = newSession(token)
     result = OrcDiscord(
         session: ses,
     )
