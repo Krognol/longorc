@@ -31,3 +31,5 @@ Documentation
 | .!wolfram | query | Wolfram\|Alpha query result | false |
 | .!fm | username, or nothing | Looks up last.fm user's last played, and currently playing track. If no username is given takes from local cache | false |
 | .!fm set | username | Sets a last.fm username in the local cache | false |
+| .!fm collage | username, or nothing | Gets a collage of the users top played albums in the last week | false |
+| .!fm topweekly | username, or nothing | Gets statistics of the users most played songs in the last week | false |
