@@ -41,7 +41,8 @@ proc getRandomGfy(cats: JsonNode): JsonNode =
     randomize()
     let i = random(cats["gfycats"].len)
     result = cats["gfycats"].elems[i]
-    while result["nsfw"].str != "0":
+    # I hate the gfycat api, sending varying types
+    while result.hasKey("nsfw") and result["nsfw"].kind == JString and result["nsfw"].str != "0":
         randomize()
         result = cats["gfycats"].elems[random(cats["gfycats"].len)]
 
@@ -64,7 +65,7 @@ method message*(p: GfycatPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         if parts.len > 1:
             case parts[0]:
             of "user": 
-                if parts.len == 2:
+                if parts.len > 1:
                     let res = await client.get("https://api.gfycat.com/v1/users/" & parts[1])
                     client.close()
                     if res == nil: return
@@ -92,6 +93,7 @@ method message*(p: GfycatPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         else:
             if tag == "tags":
                 let res = await client.get("https://api.gfycat.com/v1test/tags/trending")
+                client.close()
                 if res == nil: return
                 let body = await res.body
                 let node = parseJson(body)
@@ -133,4 +135,3 @@ method message*(p: GfycatPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
                     fields: @[]
                 )
                 asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
-    return
