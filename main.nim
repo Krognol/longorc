@@ -12,7 +12,9 @@ import ./src/longorc,
             gfycat/gfy,
             wiktionary/wik,
             wolfram/wolfram,
-            lastfm/lastfm
+            lastfm/lastfm,
+            markov/markov,
+            tags/tags
         ],
         asyncdispatch, tables, discord
  
@@ -30,6 +32,10 @@ bot.registerPlugin(orc, newGfycatPlugin("gfycat client id", "gfycat client secre
 bot.registerPlugin(orc, newWiktionaryPlugin("wordnik api key"))
 bot.registerPlugin(orc, newWolframPlugin("app id"))
 bot.registerPlugin(orc, newLastFMPlugin("last.fm api key"))
+let markovp = newMarkovPlugin()
+markovp.newGenerator("markov chain name", "source.txt")
+bot.registerPlugin(orc, markovp)
+bot.registerPlugin(orc, newTagPlugin())
 
 proc orcReady(s: Session, m: Ready) =
     s.updateStreamingStatus(0, ".!help", "")
@@ -51,4 +57,4 @@ orc.session.addHandler(EventType.message_create, orcMessageCreate)
 orc.session.addHandler(EventType.message_update, orcMessageUpdate)
 orc.session.addHandler(EventType.message_delete, orcMessageDelete)
 orc.session.addHandler(EventType.on_ready, orcReady)
-waitFor orc.session.SessionStart() 
+waitFor orc.session.startSession() 
