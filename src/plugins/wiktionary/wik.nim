@@ -35,8 +35,8 @@ method message*(p: WiktionaryPlugin, b: Bot, s: Service, m: OrcMessage) {.async.
         client.headers.add("Accept", "application/json")
         var url = wordDef & word & wordDefQuery & p.apikey
         var res = await client.get(url)
+        client.close()        
         if res == nil: return
-        client.close()
 
         var body = await res.body
         var node = parseJson(body)
@@ -50,10 +50,11 @@ method message*(p: WiktionaryPlugin, b: Bot, s: Service, m: OrcMessage) {.async.
         client = newAsyncHttpClient()
         client.headers.add("Accept", "application/json")
         res = await client.get(url)
-        if res == nil: return
         client.close()
+        if res == nil: return
         body = await res.body
         node = parseJson(body)
+        
         var wordpron = ""
         if node.kind == JArray and node.elems.len != 0:
             wordpron = node.elems[0]["raw"].str

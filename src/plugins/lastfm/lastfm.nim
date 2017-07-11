@@ -85,6 +85,7 @@ method message*(p: LastFMPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
                 if name == "": return
                 let url = "http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=7day&format=json&limit=100&user=" & name & "&api_key=" & p.apikey
                 let res = await client.get(url)
+                client.close()
                 if res == nil or res.code != HttpCode(200):
                     s.sendMessage(m.channel(), "Error while looking up ")
                     return

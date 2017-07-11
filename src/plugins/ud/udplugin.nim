@@ -25,12 +25,13 @@ method message*(p: UDPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         client.headers.add("Content-Type", "application/json")
         client.headers.add("Accept", "application/json")
         let res = await client.get("http://api.urbandictionary.com/v0/define?term=" & encodeUrl(word))
+        client.close()
+        
         if res == nil: 
             s.sendMessage(m.channel(), "Couldn't find definiton for " & word)
             return
         let body = await res.body()
         let node = parseJson(body)
-        client.close()
         if node["result_type"].str == "no_results":
             s.sendMessage(m.channel(), "Couldn't find definition for " & word)
             return

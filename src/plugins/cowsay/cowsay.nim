@@ -25,10 +25,10 @@ method message*(p: CowSayPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         client.headers.add("Accept", "application/json")
         client.headers.add("Content-Type", "application/json")
         let res = await client.get(url)
+        client.close()        
         if res == nil:
             s.sendMessage(m.channel(), "Something happened")
             return
         let body = await res.body()
         let node = parseJson(body)
-        client.close()
         s.sendMessage(m.channel(), "```\n" & node["cow"].str & "\n```")

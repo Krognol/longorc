@@ -25,10 +25,11 @@ method message*(p: WolframPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
 
         let client = newAsyncHttpClient()
         let res = await client.get("http://api.wolframalpha.com/v1/result?&i=" & encodeUrl(query) & "&appid=" & p.appid)
+        client.close()
         if res == nil or res.code != HttpCode(200):
             s.sendMessage(m.channel(), "No result")
             return
-        
+            
         let body = await res.body
         if body == "":
             s.sendMessage(m.channel(), "Something happened...")
