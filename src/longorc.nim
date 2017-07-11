@@ -125,6 +125,9 @@ method userChannelPermissions(s: OrcDiscord, user, channel: string): int {.base.
 
     result = orcMemberPermissions(guild, channel, member)
 
+method messageServer*(s: OrcDiscord, m: OrcMessage): string {.base, gcsafe.} =
+    let dm = cast[OrcDiscordMessage](m)
+    result = s.session.messageGuild(dm.msg)
 
 # Discord service methods
 method name*(s: OrcDiscord): string {.inline, gcsafe.} = "Discord"
