@@ -14,8 +14,6 @@ method help*(p: Msgmanager, b: Bot, s: Service, m: OrcMessage): seq[string] =
 method message*(p: Msgmanager, b: Bot, s: Service, m: OrcMessage) {.async.} =
     if s.isMe(m) or m.msgType() == mtMessageDelete or m.user().bot():
         return
-
-    
     
     if m.matchesCommand(s, "prune"):
         if not s.isModerator(m):
@@ -35,5 +33,4 @@ method message*(p: Msgmanager, b: Bot, s: Service, m: OrcMessage) {.async.} =
         var ids: seq[string] = @[]
         for msg in msgs:
             ids.add(msg.id)
-        asyncCheck discord.session.channelMessageDeleteBulk(m.channel(), ids)
-    
+        asyncCheck discord.session.channelMessagesDeleteBulk(m.channel(), ids)
