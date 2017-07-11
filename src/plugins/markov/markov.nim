@@ -65,7 +65,7 @@ method message*(p: MarkovPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
     if m.msgType() != mtMessageCreate or s.isMe(m) or m.user().bot:
         return
 
-    if matchesCommand(m, s, "marckov"):
+    if matchesCommand(m, s, "markov"):
         let (name, _) = parseCommand(s, m)
         if name == "": return
         if p.generators.hasKey(name):
