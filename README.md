@@ -19,6 +19,7 @@ Documentation
 | .!urban | word | Urban dictionary definition of word | false |
 | .!define | word | Wiktionary definition of word | false |
 | .!userinfo | -- | User information | false |
+| .!avatar | -- | User avatar | false |
 | .!serverinfo | -- | Information about the server | false |
 | .!status | -- | Bot status | false |
 | .!enablewidget | -- | Enables the server widget | true |
@@ -33,3 +34,8 @@ Documentation
 | .!fm set | username | Sets a last.fm username in the local cache | false |
 | .!fm collage | username, or nothing | Gets a collage of the users top played albums in the last week | false |
 | .!fm topweekly | username, or nothing | Gets statistics of the users most played songs in the last week | false |
+| .!tag | tag name | Gets the tags contents. | false |
+| .!tag add | [tag name] [tag content] | Adds a new tag | false |
+| .!tag edit | [tag name] [tag content] | Edits a tag. Usable by mods and the owner of the tag | false |
+| .!tag remove | tag name | Removes a tag. Usable by mods and the owner of the tag | false |
+| .!markov | chain name | Generates a random sentence from a file input | false |
