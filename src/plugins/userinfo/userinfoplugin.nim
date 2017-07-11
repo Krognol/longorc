@@ -1,4 +1,4 @@
-import ../../longorc, discord, strutils, times, asyncdispatch, tables,os
+import ../../longorc, discord, strutils, times, asyncdispatch, tables, os, httpclient
 
 type
     UserInfoPlugin* = ref object of Plugin
@@ -17,7 +17,7 @@ method help*(u: UserInfoPlugin, b: Bot, s: Service, m: OrcMessage): seq[string] 
         commandHelp("userinfo", " -- ", "Displays info about the user for whoever used the command"),
         commandHelp("serverinfo", " -- ", "Displays server info"),
         commandHelp("status", " -- ", "Shows the current bot status"),
-        commandHelp("enablebadge", " -- ", "Enables a guild badge that shows the current amount of online people")
+        commandHelp("enablewidget", " -- ", "Enables a the guild widget. (Used in the .!serverinfo command to show the number of online people)")
     ]
 
 method message*(u: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.} = 
@@ -25,13 +25,15 @@ method message*(u: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.}
         return
     
     let discord = cast[OrcDiscord](b.services["Discord"].service)
-    if m.matchesCommand(s, "enablebadge"):
+    let (_, arg) = parseCommand(s, m)
+    if not (arg.len >= 1): return
+    case arg[0]:
+    of "enablewidget":
         let chan = await discord.session.channel(m.channel())
         try:
             asyncCheck discord.session.guildEmbedEdit(chan.guild_id, true, m.channel())
         except: discard
-        return
-    if m.matchesCommand(s, "userinfo"):
+    of "userinfo":
         var (id, _) = s.parseCommand(m)
         if id == "": id = m.user.id
         if id != "": 
@@ -50,9 +52,7 @@ method message*(u: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.}
                 asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
             except:
                 s.sendMessage(m.channel(), "Unknown user")
-        return
-    
-    if m.matchesCommand(s, "serverinfo"):
+    of "serverinfo":
         try:
             let channel = waitFor discord.session.channel(m.channel())
             let guild = waitFor discord.session.guild(channel.guild_id)
@@ -84,16 +84,14 @@ method message*(u: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.}
             asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
         except:
             s.sendMessage(m.channel(), "Something happened :(")
-        return
-
-    if m.matchesCommand(s, "status"):
+    of "status":
         try:
             let fields = @[
                 EmbedField(name: "Host OS", value: system.hostOS, inline: true),
                 EmbedField(name: "Host CPU", value: system.hostCPU, inline: true),
                 EmbedField(name: "Start time", value: b.launchtime.getLocalTime().format("yyyy-MM-dd HH:mm:ss"), inline: true),
                 EmbedField(name: "CPU time", value: $cpuTime(), inline: true),
-                EmbedField(name: "Discordnim version", value: "1.4.1", inline: true),
+                EmbedField(name: "Discordnim version", value: "1.5.0", inline: true),
                 EmbedField(name: "Nim version", value: NimVersion, inline: true) 
             ]
             let thumbnail = EmbedThumbnail(url: "https://cdn.discordapp.com/avatars/330139412983840769/" & discord.session.cache.me.avatar & ".png")
@@ -101,3 +99,13 @@ method message*(u: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.}
             asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
         except:
             s.sendMessage(m.channel(), "Something happened :(")
+    of "avatar":
+        let url = endpointAvatar(m.user().id, m.user().avatar)
+        let client = newAsyncHttpClient()
+        let res = await client.get(url)
+        client.close()
+        if res == nil or res.code != HttpCode 200:
+            s.sendMessage(m.channel(), "Error getting avatar")
+            return
+        let body = await res.body
+        asyncCheck discord.session.channelFileSendWithMessage(m.channel(), m.user.id&"_avatar.png", body, "<@"&m.user.id&">")
