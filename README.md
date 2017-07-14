@@ -1,10 +1,14 @@
 # Long Orc
 
-Discord bot made with [Discordnim](https://github.com/Krognol/discordnim).
+- [Writing your own Services](#Services)
+  - [Messages](#Service-Message)
+  - [Users](#Service-Users)
+  - [Plugins](#Service-Plugins)
+- [Commands](#Commands)
 
-Right now it's mostly fitted for Discord, but will be made much more usable for other chat services soon™.
+(Not just a) Discord bot made with [Discordnim](https://github.com/Krognol/discordnim).
 
-# Writing your own services
+# Services
 
 When making your own services, make a new `.nim` file in the `src` directory with the same name as the service.
 
@@ -35,7 +39,59 @@ method sendMessage*(s: TService, at: string, message: string)
 method prefix*(s: TService): string 
 ```
 
-# Writing your own plugins
+## Service Message
+
+Messages recieved from services are handled by making a `TMessage` which inherits the following methods:
+
+```nim
+type TMessage = ref object of OrcMessage
+
+# The message sender
+method user*(m: TMessage): TUser
+
+# The channel where the message was sent in
+# For discord this is a snowflake id
+# but in a service for something like Twitch IRC
+# it'd be `#channel-name`
+method channel*(m: TMessage): string
+
+# The contents of the message
+method content*(m: TMessage): string
+
+# Should return a message id if one is available
+method id*(m: TMessage): string
+
+# The type of the message
+# Create/Update/Delete
+method msgTyp*(m: TMessage): MessageType
+```
+
+These messages are handled as `OrcMessage` types when passed to plugin methods.
+
+## Service Users
+
+User types **must** inherit the following methods:
+
+```nim
+type TUser = ref object of OrcUser
+
+# The name of the user
+method name*(u: TUser): string
+
+# The ID of the user if one is available
+method id*(u: TUser): string
+
+# The users avatar link if one is available
+method avatar*(u: TUser): string
+
+# The users discriminator if one is available
+method discriminator*(u: TUser): string
+
+# Whether the user is a bot or not
+method bot*(u: TUser): bool
+```
+
+## Service Plugins
 
 Make a new folder in the `src/plugins` directory with the name of the plugin, and a `.nim` file with (preferably) the same name.
 
@@ -111,6 +167,8 @@ method message*(p: TPlugin, b: longorc.Bot, s: longorc.Service, m: longorc.OrcMe
 
 # Commands
 
+Most of these commands are fitted for Discord, but should be pretty easy to modify for other services.
+
 | Command       | Arg           | Desc  | Mod command |
 | ------------- |:-------------:| :-----:| :----: |
 | .!iroll      | integer number | Rolls a random integer between 0..n | false |
@@ -142,3 +200,5 @@ method message*(p: TPlugin, b: longorc.Bot, s: longorc.Service, m: longorc.OrcMe
 | .!tag edit | [tag name] [tag content] | Edits a tag. Usable by mods and the owner of the tag | false |
 | .!tag remove | tag name | Removes a tag. Usable by mods and the owner of the tag | false |
 | .!markov | chain name | Generates a random sentence from a file input | false |
+| .!logger users | 'enable' or 'disable' | Enables logging of users joining and leaving a Discord guild | true |
+| .!logger channel | channel id | Sets the logging channel for the Discord guild | true |
