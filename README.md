@@ -1,10 +1,10 @@
 # Long Orc
 
-- [Writing your own Services](#Services)
-  - [Messages](#Service-Message)
-  - [Users](#Service-Users)
-  - [Plugins](#Service-Plugins)
-- [Commands](#Commands)
+- [Writing your own Services](#services)
+  - [Messages](#service-message)
+  - [Users](#service-users)
+  - [Plugins](#service-plugins)
+- [Commands](#commands)
 
 (Not just a) Discord bot made with [Discordnim](https://github.com/Krognol/discordnim).
 
