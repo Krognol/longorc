@@ -202,3 +202,7 @@ Most of these commands are fitted for Discord, but should be pretty easy to modi
 | .!markov | chain name | Generates a random sentence from a file input | false |
 | .!logger users | 'enable' or 'disable' | Enables logging of users joining and leaving a Discord guild | true |
 | .!logger channel | channel id | Sets the logging channel for the Discord guild | true |
+| .!quote | [index or nothing] | Gets a random quote if no index is specified | false |
+| .!quote add | text | Adds a quote | false |
+| .!quote edit | index | Edits a quote | true |
+| .!quote remove | index | Removes a quote | true |
