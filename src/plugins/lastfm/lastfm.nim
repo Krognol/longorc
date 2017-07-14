@@ -1,4 +1,4 @@
-import ../../longorc, discord, asyncdispatch, httpclient, marshal, json, tables, cgi, os, strutils, times
+import ../../longorc, ../../orcdiscord, discord, asyncdispatch, httpclient, marshal, json, tables, cgi, os, strutils, times
 
 type 
     FMUser = object

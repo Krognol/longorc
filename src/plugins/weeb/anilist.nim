@@ -1,4 +1,4 @@
-import ../../longorc, asyncdispatch, httpclient, discord, cgi, tables, json, marshal, strutils, re
+import ../../longorc, ../../orcdiscord,  asyncdispatch, httpclient, discord, cgi, tables, json, marshal, strutils, re
 
 const AnilistUrl = "https://anilist.co/api/"
 

@@ -1,4 +1,4 @@
-import ../../longorc, marshal, strutils, sequtils, asyncdispatch, tables, locks
+import ../../longorc, ../../orcdiscord,  marshal, strutils, sequtils, asyncdispatch, tables, locks
 
 type
     Tag = object

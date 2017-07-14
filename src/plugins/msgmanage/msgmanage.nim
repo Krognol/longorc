@@ -1,4 +1,4 @@
-import ../../longorc, discord, asyncdispatch, strutils, tables
+import ../../longorc, ../../orcdiscord,  discord, asyncdispatch, strutils, tables
 
 type Msgmanager* = ref object of Plugin
 
@@ -26,7 +26,7 @@ method message*(p: Msgmanager, b: Bot, s: Service, m: OrcMessage) {.async.} =
             return
         let i = args.parseInt
         let discord = cast[OrcDiscord](b.services["Discord"].service)
-        let msgs = await discord.session.channelMessages(m.channel(), m.id(), "", "", i)
+        let msgs = await discord.session.channelMessages(m.channel(), "", "", "", i)
         if msgs.len == 0:
             s.sendMessage(m.channel(), "Something went wrong when retrieving messages")
             return

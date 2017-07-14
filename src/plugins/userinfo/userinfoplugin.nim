@@ -1,26 +1,29 @@
-import ../../longorc, discord, strutils, times, asyncdispatch, tables, os, httpclient
+import ../../longorc, ../../orcdiscord,  discord, strutils, times, asyncdispatch, tables, os, httpclient
 
 type
     UserInfoPlugin* = ref object of Plugin
+        cache*: Table[string, Embed]
 
-proc idToMs(id: string): int64 {.inline.} = (id.parseInt shr 22) + 1420070400000
-proc guildEmojis(emojis: seq[Emoji]): string = 
-    result = ""
-    for emoji in emojis:
-        result &= @emoji
-method save*(u: UserInfoPlugin) = return
-method load*(u: UserInfoPlugin) = return
-method name*(u: UserInfoPlugin): string = "userinfo"
-
-method help*(u: UserInfoPlugin, b: Bot, s: Service, m: OrcMessage): seq[string] =
-    result = @[
+const 
+    helpConst = @[
         commandHelp("userinfo", " -- ", "Displays info about the user for whoever used the command"),
         commandHelp("serverinfo", " -- ", "Displays server info"),
         commandHelp("status", " -- ", "Shows the current bot status"),
         commandHelp("enablewidget", " -- ", "Enables a the guild widget. (Used in the .!serverinfo command to show the number of online people)")
     ]
 
-method message*(u: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.} = 
+proc idToMs(id: string): int64 {.inline.} = (id.parseInt shr 22) + 1420070400000
+proc guildEmojis(emojis: seq[Emoji]): string {.inline.} = 
+    result = ""
+    for emoji in emojis:
+        result &= @emoji
+method save*(p: UserInfoPlugin) {.inline.} = return
+method load*(p: UserInfoPlugin) {.inline.} = return
+method name*(p: UserInfoPlugin): string {.inline.} = "userinfo"
+
+method help*(p: UserInfoPlugin, b: Bot, s: Service, m: OrcMessage): seq[string] {.inline.} = helpConst
+
+method message*(p: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.} = 
     if m.msgType() != mtMessageCreate or s.isMe(m) or m.user().bot:
         return
     
@@ -34,27 +37,30 @@ method message*(u: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.}
             asyncCheck discord.session.guildEmbedEdit(chan.guild_id, true, m.channel())
         except: discard
     of "userinfo":
-        var (id, _) = s.parseCommand(m)
-        if id == "": id = m.user.id
-        if id != "": 
-            try:
-                let user = waitFor discord.session.user(id)
-                let i = (idToMs(user.id).int/1000).int
-                let t = i.fromSeconds().getLocalTime()
-                let fields = @[
-                    EmbedField(name: "Username", value: user.username, inline: true),
-                    EmbedField(name: "ID", value: user.id, inline: true),
-                    EmbedField(name: "Discriminator", value: user.discriminator, inline: true),
-                    EmbedField(name: "Registered", value: t.format("yyyy-MM-dd HH:mm:ss"), inline: true)
-                ]
-                let img = EmbedThumbnail(url: "https://cdn.discordapp.com/avatars/" & user.id & "/" & user.avatar & ".png")
-                let embed = Embed(title: "User info", description: "", color: Color, thumbnail: img, fields: fields)
-                asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
-            except:
-                s.sendMessage(m.channel(), "Unknown user")
+        try:
+            if p.cache.hasKey(m.user.id):
+                asyncCheck discord.session.channelMessageSendEmbed(m.channel, p.cache[m.user.id])
+                return
+            let i = (idToMs(m.user.id).int/1000).int
+            let t = i.fromSeconds().getLocalTime()
+            let fields = @[
+                EmbedField(name: "Username", value: m.user.name, inline: true),
+                EmbedField(name: "ID", value: m.user.id, inline: true),
+                EmbedField(name: "Discriminator", value: m.user.discriminator, inline: true),
+                EmbedField(name: "Registered", value: t.format("yyyy-MM-dd HH:mm:ss"), inline: true)
+            ]
+            let img = EmbedThumbnail(url: "https://cdn.discordapp.com/avatars/" & m.user.id & "/" & m.user.avatar & ".png")
+            let embed = Embed(title: "User info", description: "", color: Color, thumbnail: img, fields: fields)
+            asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
+            p.cache[m.user.id] = embed
+        except:
+            s.sendMessage(m.channel(), "Unknown user")
     of "serverinfo":
         try:
             let channel = waitFor discord.session.channel(m.channel())
+            if p.cache.hasKey(channel.guild_id):
+                asyncCheck discord.session.channelMessageSendEmbed(m.channel, p.cache[channel.guild_id])
+                return
             let guild = waitFor discord.session.guild(channel.guild_id)
             let i = (idToMs(guild.id).int/1000).int
             let t = i.fromSeconds().getLocalTime()
@@ -82,6 +88,7 @@ method message*(u: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.}
                 fields: fields
             )
             asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
+            p.cache[guild.id] = embed
         except:
             s.sendMessage(m.channel(), "Something happened :(")
     of "status":
@@ -91,7 +98,7 @@ method message*(u: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.}
                 EmbedField(name: "Host CPU", value: system.hostCPU, inline: true),
                 EmbedField(name: "Start time", value: b.launchtime.getLocalTime().format("yyyy-MM-dd HH:mm:ss"), inline: true),
                 EmbedField(name: "CPU time", value: $cpuTime(), inline: true),
-                EmbedField(name: "Discordnim version", value: "1.5.0", inline: true),
+                EmbedField(name: "Discordnim version", value: VERSION, inline: true),
                 EmbedField(name: "Nim version", value: NimVersion, inline: true) 
             ]
             let thumbnail = EmbedThumbnail(url: "https://cdn.discordapp.com/avatars/330139412983840769/" & discord.session.cache.me.avatar & ".png")

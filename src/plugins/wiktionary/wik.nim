@@ -1,4 +1,4 @@
-import ../../longorc, discord, asyncdispatch, httpclient, json, tables, cgi
+import ../../longorc, ../../orcdiscord,  discord, asyncdispatch, httpclient, json, tables, cgi
 
 type 
     WiktionaryPlugin* = ref object of Plugin

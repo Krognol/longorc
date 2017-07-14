@@ -1,4 +1,4 @@
-import ../../longorc, discord, httpclient, asyncdispatch, json, cgi, tables
+import ../../longorc, ../../orcdiscord,  discord, httpclient, asyncdispatch, json, cgi, tables
 
 type UDPlugin* = ref object of Plugin
 
