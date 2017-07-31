@@ -12,12 +12,12 @@ method authenticate(p: AnilistPlugin): Future[string] {.async, gcsafe, base.} =
     var client = newAsyncHttpClient()
     let url = AnilistUrl & "auth/access_token?grant_type=client_credentials&client_id=" & p.client_id & "&client_secret=" & p.client_secret
     let res = await client.post(url)
+    client.close()
     if res == nil:
         return nil
     let body = await res.body()
     let node = parseJson(body)
     result = node["access_token"].str
-    client.close()
 
 method save*(p: AnilistPlugin) = return
 method load*(p: AnilistPlugin) = return

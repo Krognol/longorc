@@ -16,7 +16,7 @@ proc newLastfmPlugin*(apikey: string): LastFMPlugin =
         echo "No state available for LastFM plugin"
 
 method getUser(p: LastFMPlugin, name: string): FMUser {.base, gcsafe.} =
-    result = FMUser()
+    result = FMUser(id: "", fmname: "")
     for user in p.users:
         if user.fmname == name or user.id == name:
             result = user
@@ -58,31 +58,31 @@ method message*(p: LastFMPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         let discord = cast[OrcDiscord](b.services["Discord"].service)
         var (name, parts) = parseCommand(s, m)
         if parts.len > 0:
-            case parts[0]:
+            case parts[0].toLowerAscii:
             of "set":
+                if parts.len < 2: return
                 let newuser = FMUser(id: m.user().id, fmname: parts[1])
                 p.users.add(newuser)
                 p.save()
                 s.sendMessage(m.channel(), "Set Last.fm username for <@" & m.user().id & "> to '" & parts[1] & "'")
-                return
             of "collage":
-                let client = newAsyncHttpClient()
                 if parts.len < 2:
                     name = p.getUser(m.user().id).fmname
                 else: name = parts[1]
-                if name == "": return
-                let res = await client.get(collageUrl & name)
-                client.close() 
+                if name == "" or name == nil: return
+                let client = newAsyncHttpClient()
+                let res = await client.get(collageUrl & name) 
+                client.close()
                 if res == nil or res.code != HttpCode(200):
                     s.sendMessage(m.channel(), "Couldn't get collage")
                 let body = await res.body
                 asyncCheck discord.session.channelFileSendWithmessage(m.channel(), "collage_"&name&".png", body, "<@"&m.user().id&">")
             of "topweekly":
-                let client = newAsyncHttpClient()
                 if parts.len == 1:
                     name = p.getUser(m.user().id).fmname
                 else: name = parts[1]
-                if name == "": return
+                if name == "" or name == nil: return
+                let client = newAsyncHttpClient()
                 let url = "http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=7day&format=json&limit=100&user=" & name & "&api_key=" & p.apikey
                 let res = await client.get(url)
                 client.close()
@@ -142,15 +142,14 @@ method message*(p: LastFMPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
                     let node = parseJson(body)
 
                     var fields: seq[EmbedField] = @[]
-                    var thumb: EmbedThumbnail = EmbedThumbnail()
-                    for elem in node["recenttracks"].fields["track"].elems:
+                    var thumb = EmbedThumbnail(url: node["recenttracks"]["track"][0]["image"][3]["#text"].str)
+                    for elem in node["recenttracks"]["track"].elems:
                         if elem.hasKey("@attr") and elem["@attr"].hasKey("nowplaying"):
                             fields.add(EmbedField(
                                 name: "Currently playing", 
                                 value: elem["name"].str & " -- " & elem["artist"].fields["#text"].str, 
                                 inline: false
                             ))
-                            thumb = EmbedThumbnail(url: elem["image"].elems[3]["#text"].str)
                             continue
                         fields.add(EmbedField(
                             name: "Recently played", 
@@ -158,7 +157,7 @@ method message*(p: LastFMPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
                             inline: false
                         ))
                     
-                    if thumb.url == "":
+                    if thumb.url == "" or thumb.url == nil:
                         var iconurl = "http://i.imgur.com/jzZ5llc.png"
                         if node["recenttracks"]["track"][0]["image"][3]["#text"].str != "":
                             iconurl = node["recenttracks"]["track"][0]["image"][3]["#text"].str

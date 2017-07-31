@@ -74,15 +74,22 @@ proc orcMemberPermissions(g: Guild, c: DChannel, m: GuildMember): int =
     
     result = perms
 
-method userChannelPermissions(s: OrcDiscord, user, channel: string): int {.base.} =
-    let channel = waitFor s.session.channel(channel)
+method userChannelPermissions(s: OrcDiscord, user, chan: string): int {.base.} =
+    let channel = waitFor s.session.channel(chan)
     let guild = waitFor s.session.guild(channel.guild_id)
+    if guild.id == "": return
     if user == guild.owner_id: 
         return permAll
     
     let member = waitFor s.session.guildMember(guild.id, user)
 
     result = orcMemberPermissions(guild, channel, member)
+
+method userGiveRole*(s: OrcDiscord, guild, user, role: string) {.base, gcsafe, async.} =
+    asyncCheck s.session.guildMemberAddRole(guild, user, role)
+
+method userTakeRole*(s: OrcDiscord, guild, user, role: string) {.base, gcsafe, async, inline.} =
+    asyncCheck s.session.guildMemberRemoveRole(guild, user, role)
 
 method messageServer*(s: OrcDiscord, m: OrcMessage): string {.base, gcsafe.} =
     let dm = cast[OrcDiscordMessage](m)

@@ -46,7 +46,15 @@ proc getRandomGfy(cats: JsonNode): JsonNode =
         randomize()
         result = cats["gfycats"].elems[random(cats["gfycats"].len)]
 
-        
+method getGfyUser(p: GfycatPlugin, username: string): Future[JsonNode] {.async, gcsafe, base.} =
+    let client = newAsyncHttpClient()
+    let res = await client.get("https://api.gfycat.com/v1/users/" & username)
+    client.close()
+    if res == nil: return
+    let body = await res.body()
+    result = parseJson(body)
+    if result.kind == JObject and result.hasKey("errorMessage"): 
+        result = nil
 
 method message*(p: GfycatPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
     if s.isMe(m) or m.user().bot() or m.msgType() == mtMessageDelete: return
@@ -66,13 +74,9 @@ method message*(p: GfycatPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
             case parts[0]:
             of "user": 
                 if parts.len > 1:
-                    let res = await client.get("https://api.gfycat.com/v1/users/" & parts[1])
-                    client.close()
-                    if res == nil: return
-                    let body = await res.body()
-                    let node = parseJson(body)
-                    if node.kind == JObject and node.hasKey("errorMessage"): 
-                        s.sendMessage(m.channel(), "Couldn't find that user :(")
+                    let node = await p.getGfyUser(parts[0])
+                    if node == nil: 
+                        s.sendMessage(m.channel, "No results")
                         return
                     let embed = Embed(
                         author: EmbedAuthor(

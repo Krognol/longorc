@@ -63,7 +63,7 @@ proc matchesCommand*(m: OrcMessage, s: Service, command: string): bool =
     result = (msg == command) or msg.startsWith(command.toLowerAscii() & " ")
 
 proc parseCommand*(s: Service, m: OrcMessage): (string, seq[string]) =
-        var msg = m.content().toLowerAscii()
+        var msg = m.content()
         var pref = s.prefix()
 
         if msg.startsWith(pref):
@@ -106,7 +106,7 @@ method message*(p: HelpPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         if s.name() == "Discord":
             var ret = "```" & helpSeq.join("\n") & "```"
             if ret.len >= 500: 
-                ret = "All commands can be found here <https://github.com/Krognol/longorc#Commands>"
+                ret = "All commands can be found here <https://github.com/Krognol/longorc#commands>"
             s.sendMessage(m.channel(), ret)
 
 proc newBot*(): Bot =

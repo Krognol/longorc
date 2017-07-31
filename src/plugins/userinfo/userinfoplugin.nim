@@ -2,7 +2,7 @@ import ../../longorc, ../../orcdiscord,  discord, strutils, times, asyncdispatch
 
 type
     UserInfoPlugin* = ref object of Plugin
-        cache*: Table[string, Embed]
+        cache: Table[string, Embed]
 
 const 
     helpConst = @[
@@ -11,6 +11,8 @@ const
         commandHelp("status", " -- ", "Shows the current bot status"),
         commandHelp("enablewidget", " -- ", "Enables a the guild widget. (Used in the .!serverinfo command to show the number of online people)")
     ]
+
+proc newUserInfoPlugin*(): UserInfoPlugin = UserInfoPlugin(cache: initTable[string, Embed]())
 
 proc idToMs(id: string): int64 {.inline.} = (id.parseInt shr 22) + 1420070400000
 proc guildEmojis(emojis: seq[Emoji]): string {.inline.} = 
@@ -92,16 +94,17 @@ method message*(p: UserInfoPlugin, b: Bot, s: Service, m : OrcMessage) {.async.}
         except:
             s.sendMessage(m.channel(), "Something happened :(")
     of "status":
+        let t = cpuTime().fromSeconds().toTimeInterval()
         try:
             let fields = @[
                 EmbedField(name: "Host OS", value: system.hostOS, inline: true),
                 EmbedField(name: "Host CPU", value: system.hostCPU, inline: true),
                 EmbedField(name: "Start time", value: b.launchtime.getLocalTime().format("yyyy-MM-dd HH:mm:ss"), inline: true),
-                EmbedField(name: "CPU time", value: $cpuTime(), inline: true),
+                EmbedField(name: "CPU time", value: "$1 h $2 min $3 sec" % [$t.hours, $t.minutes, $t.seconds], inline: true),
                 EmbedField(name: "Discordnim version", value: VERSION, inline: true),
                 EmbedField(name: "Nim version", value: NimVersion, inline: true) 
             ]
-            let thumbnail = EmbedThumbnail(url: "https://cdn.discordapp.com/avatars/330139412983840769/" & discord.session.cache.me.avatar & ".png")
+            let thumbnail = EmbedThumbnail(url: endpointAvatar(discord.session.cache.me.id, discord.session.cache.me.avatar))
             let embed = Embed(title: "Bot status", fields: fields, description: system.GC_getStatistics(), thumbnail: thumbnail, color: Color)
             asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
         except:
