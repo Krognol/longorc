@@ -206,3 +206,8 @@ Most of these commands are fitted for Discord, but should be pretty easy to modi
 | .!quote add | text | Adds a quote | false |
 | .!quote edit | index | Edits a quote | true |
 | .!quote remove | index | Removes a quote | true |
+| .!roles | -- | Displays the gettable roles for the server | false |
+| .!roles add | [role name] [role id] | Adds a role to the gettable roles of the server | true |
+| .!roles del | [role name] | Removes a role from the gettables roles for the server | true |
+| .!role get | [role name] | Adds a role to the requesting user | false |
+| .!role remove | [role name] | Removes a role from the requesting user | false |
