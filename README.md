@@ -179,10 +179,11 @@ Most of these commands are fitted for Discord, but should be pretty easy to modi
 | .!character | name | Anilist.co entry on character | false |
 | .!urban | word | Urban dictionary definition of word | false |
 | .!define | word | Wiktionary definition of word | false |
-| .!userinfo | -- | User information | false |
-| .!avatar | -- | User avatar | false |
-| .!serverinfo | -- | Information about the server | false |
-| .!status | -- | Bot status | false |
+| .!info user | -- | User information | false |
+| .!info user | [@user mention] | false |
+| .!info server | -- | Information about the server | false |
+| .!info avatar | -- | User avatar | false |
+| .!info status | -- | Bot status | false |
 | .!enablewidget | -- | Enables the server widget | true |
 | .!eval | code | Evaluates Nim code. Restricted to one liners | false |
 | .!prune | amount | Deletes all N messages not older than 2 weeks | true |
@@ -191,10 +192,14 @@ Most of these commands are fitted for Discord, but should be pretty easy to modi
 | .!gfy trending | -- | Looks up trending Gfycats | false |
 | .!gfycat user | name | Looks up Gfycat user | false |
 | .!wolfram | query | Wolfram\|Alpha query result | false |
-| .!fm | username, or nothing | Looks up last.fm user's last played, and currently playing track. If no username is given takes from local cache | false |
+| .!fm now | username, or nothing | Looks up last.fm user's currently playing song | false |
 | .!fm set | username | Sets a last.fm username in the local cache | false |
+| .!fm recent | username, or nothing | The users 10 last listened to songs | false |
 | .!fm collage | username, or nothing | Gets a collage of the users top played albums in the last week | false |
-| .!fm topweekly | username, or nothing | Gets statistics of the users most played songs in the last week | false |
+| .!fm top tracks | username, or nothing | Gets statistics of the users most played songs (all time) | false |
+| .!fm top albums | username, or nothing | Gets statistics of the users most listened to albums (all time) | false |
+| .!fm top artists | username, or nothing | Gets statistics of the users most listened to artists (all time) | false |
+| .!fm top weekly | username, or nothing | Gets statistics of the users most played songs (weekly) | false |
 | .!tag | tag name | Gets the tags contents. | false |
 | .!tag add | [tag name] [tag content] | Adds a new tag | false |
 | .!tag edit | [tag name] [tag content] | Edits a tag. Usable by mods and the owner of the tag | false |
