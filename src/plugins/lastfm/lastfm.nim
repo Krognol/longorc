@@ -41,14 +41,171 @@ method name*(p: LastFMPlugin): string = "lastfm"
 
 method help*(p: LastFMPlugin, b: Bot, s: Service, m: OrcMessage): seq[string] =
     result = @[
-        commandHelp("fm", " [username or nothing] ", "Looks up last.fm user's last played, and currently playing track. If no username is given takes from local cache"),
-        commandHelp("fm set", " [last fm username] ", "Sets a last.fm username in the local cache"),
-        commandHelp("fm collage", " [last fm username or nothing] ", "Gets a 4x4 collage of the users top played album the last 7 days"),
-        commandHelp("fm topweekly", " [last fm username or nothing] ", "Displays playcount for the users top 5 weekly songs, and how many hours they've listened")
+        commandHelp("fm set",        " [last fm username] ", "Sets a last.fm username in the local cache"),
+        commandHelp("fm now",       "", "Looks up last.fm user's last played, and currently playing track. If no username is given takes from local cache"),
+        commandHelp("fm recent",    "", "Gets the users last 5 played songs."),
+        commandHelp("fm collage",    "", "Gets a 4x4 collage of the users top played album the last 7 days"),
+
+        commandHelp("fm top weekly", "", "Weekly top tracks for the user"),
+        commandHelp("fm top tracks", "", "All time top tracks for the user"),
+        commandHelp("fm top albums", "", "All time top albums for the user"),
+        commandHelp("fm top artists", "", "All time top artists for the user"),
     ]
 
 const
     collageUrl = "http://lastfmtopalbums.dinduks.com/patchwork.php?period=7day&rows=4&cols=4&imageSize=250&user="
+
+method fmrequest(p: LastFMPlugin, meth, user: string, limit: int = 0, span: string = ""): Future[JsonNode] {.base, async, gcsafe,} =
+    let client = newAsyncHttpClient()
+    var url = "https://ws.audioscrobbler.com/2.0/?method=$1&format=json&user=$2&api_key=$3" % [meth, user, p.api_key]
+    if limit != 0: url &= "&limit=" & $limit
+    if span != "": url &= "&span=" & span
+    let res = await client.get(url)
+    if not res.code.is2xx():
+        return nil
+    let body = await res.body
+    try:
+        result = body.parseJson
+        if result.hasKey("error"): return nil
+    except:
+        return nil
+
+method fmNow(p: LastFMPlugin, d: OrcDiscord, user, id, channel, avatar: string) {.base, async, gcsafe.} =
+    let js = await p.fmrequest("user.getrecenttracks", user, 1)
+    if js == nil: return
+    var embed = Embed(fields: @[], description: "")
+    for node in js["recenttracks"]["track"].elems:
+        if node.hasKey("@attr") and node["@attr"].hasKey("nowplaying"):
+            embed.author = EmbedAuthor(
+                name: user,
+                url: "https://last.fm/user/" & user,
+                icon_url: avatar
+            )
+            embed.title = node["name"].str & " -- " & node["artist"]["#text"].str
+            embed.url = node["url"].str
+            embed.image = EmbedImage(
+                url: if node["image"][3]["#text"].kind != JNull and node["image"][3]["#text"].str != "": node["image"][3]["#text"].str else: "http://i.imgur.com/jzZ5llc.png",
+            )
+            break
+
+    if embed.title.isNilOrEmpty():
+        asyncCheck d.session.channelMessageSend(channel, "Looks like you're not playing a song right now")
+        return
+    embed.color = await d.userColor(channel, id)
+    asyncCheck d.session.channelMessageSendEmbed(channel, embed)
+
+method fmRecent(p: LastFMPlugin, d: OrcDiscord, user, id, channel, avatar: string) {.base, async, gcsafe.} =
+    let js = await p.fmrequest("user.getrecenttracks", user, 9)
+    if js == nil: return
+    var embed = Embed(fields: @[], description: "", url: "")
+    for i, track in js["recenttracks"]["track"].elems:
+        let artist = track["artist"]["#text"].str
+        let song = track["name"].str
+        if i != 9:
+            embed.description &= "`$1`\t    **[$2]($3)** by **$4**\n" % [$(i+1), song, track["url"].str, artist]
+        else: 
+            embed.description &= "`$1`\t  **[$2]($3)** by **$4**\n" % [$(i+1), song, track["url"].str, artist]
+    embed.url = "https://last.fm/user/$1/library" % [user]
+    embed.author = EmbedAuthor(
+        name: "$1's Recent Tracks" % [user],
+        icon_url: avatar,
+    )
+    embed.color = await d.userColor(channel, id)
+    let img = js["recenttracks"]["track"][0]["image"][3]
+    embed.thumbnail = EmbedThumbnail(
+        url: if img["#text"].kind != JNull and img["#text"].str != "": img["#text"].str else: "http://i.imgur.com/jzZ5llc.png"
+    )
+    asyncCheck d.session.channelMessageSendEmbed(channel, embed)
+
+method fmTopTracks(p: LastFMPlugin, d: OrcDiscord, user, id, channel: string) {.base, gcsafe, async.} =
+    let js = await p.fmrequest("user.gettoptracks", user, 9)
+    if js == nil: return
+    var embed = Embed(fields: @[], description: "")
+
+    for i, track in js["toptracks"]["track"].elems:
+        let artist = track["artist"]["name"].str
+        let artisturl = track["artist"]["url"].str
+
+        let song = track["name"].str
+        let songurl = track["url"].str
+
+        let playcount = track["playcount"].str
+        if i != 9:
+            embed.description &= "`$1`\t    **[$2]($3)** by **[$4]($5)** ($6 plays)\n" % [$(i+1), song, songurl, artist, artisturl, playcount]
+        else:
+            embed.description &= "`$1`\t  **[$2]($3)** by **[$4]($5)** ($6 plays)\n" % [$(i+1), song, songurl, artist, artisturl, playcount]
+    
+    embed.thumbnail = EmbedThumbnail()
+    let img = js["toptracks"]["track"][0]["image"][3]["#text"]
+    embed.thumbnail.url = if img.kind != JNull and img.str != "": img.str else: "http://i.imgur.com/jzZ5llc.png"
+    embed.color = await d.userColor(channel, id)
+    asyncCheck d.session.channelMessageSendEmbed(channel, embed)
+
+method fmTopAlbums(p: LastFMPlugin, d: OrcDiscord, user, id, channel: string) {.base, gcsafe, async.} =
+    let js = await p.fmrequest("user.gettopalbums", user, 10)
+    if js == nil: return
+    var embed = Embed(fields: @[], description: "")
+
+    for i, album in js["topalbums"]["album"].elems:
+        let name = album["name"].str
+        let playcount = album["playcount"].str
+        let url = album["url"].str
+        let artist = album["artist"]["name"].str
+        let artisturl = album["artist"]["url"].str
+        
+        if i != 9:
+            embed.description &= "`$1`\t    **[$2]($3)** by **[$4]($5)** ($6 plays)\n" % [$(i+1), name, url, artist, artisturl, playcount]
+        else:
+            embed.description &= "`$1`\t  **[$2]($3)** by **[$4]($5)** ($6 plays)\n" % [$(i+1), name, url, artist, artisturl, playcount]
+    embed.thumbnail = EmbedThumbnail()
+    let img = js["topalbums"]["album"][0]["image"][3]["#text"]
+    embed.thumbnail.url = if img.kind != JNull and img.str != "": img.str else: "http://i.imgur.com/jzZ5llc.png"
+    embed.color = await d.userColor(channel, id)
+    asyncCheck d.session.channelMessageSendEmbed(channel, embed)
+
+method fmTopArtists(p: LastFMPlugin, d: OrcDiscord, user, id, channel: string) {.base, gcsafe, async.} =
+    let js = await p.fmrequest("user.gettopartists", user, 10)
+    if js == nil: return
+    var embed = Embed(fields: @[], description: "")
+
+    for i, artist in js["topartists"]["artist"].elems:
+        let name = artist["name"].str
+        let playcount = artist["playcount"].str
+        let url = artist["url"].str
+        if i != 9:
+            embed.description &= "`$1`\t    **[$3]($4)** ($2 plays)\n" % [$(i+1), playcount, name, url]
+        else: 
+            embed.description &= "`$1`\t  **[$3]($4)** ($2 plays)\n" % [$(i+1), playcount, name, url]
+    embed.thumbnail = EmbedThumbnail()
+    let img = js["topartists"]["artist"][0]["image"][3]["#text"]
+    embed.thumbnail.url = if img.kind != JNull and img.str != "": img.str else: "http://i.imgur.com/jzZ5llc.png"
+    embed.color = await d.userColor(channel, id)
+    asyncCheck d.session.channelMessageSendEmbed(channel, embed)
+
+method fmTopWeekly(p: LastFMPlugin, d: OrcDiscord, user, id, channel, avatar: string) {.base, gcsafe, async.} =
+    let js = await p.fmrequest("user.gettoptracks", user, 10, "7day")
+    if js == nil: return
+    var embed = Embed(fields: @[], description: "")
+    
+    for i, track in js["toptracks"]["track"].elems:
+        let artist = track["artist"]["name"].str
+        let artisturl = track["artist"]["url"].str
+
+        let song = track["name"].str
+        let songurl = track["url"].str
+
+        let playcount = track["playcount"].str
+        if i != 9:
+            embed.description &= "`$1`\t    **[$2]($3)** by **[$4]($5)** ($6 total plays)\n" % [$(i+1), song, songurl, artist, artisturl, playcount]
+        else:
+            embed.description &= "`$1`\t  **[$2]($3)** by **[$4]($5)** ($6 total plays)\n" % [$(i+1), song, songurl, artist, artisturl, playcount]
+    
+    embed.thumbnail = EmbedThumbnail()
+    let img = js["toptracks"]["track"][0]["image"][3]["#text"]
+    embed.thumbnail.url = if img.kind != JNull and img.str != "": img.str else: "http://i.imgur.com/jzZ5llc.png"
+    embed.color = await d.userColor(channel, id)
+    embed.author = EmbedAuthor(name: "$1's Weekly Top 10"%[user], icon_url: avatar, url: "https://last.fm/user/$1"%[user])
+    asyncCheck d.session.channelMessageSendEmbed(channel, embed)
 
 method message*(p: LastFMPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
     if s.isMe(m) or m.user().bot() or m.msgType() == mtMessageDelete:
@@ -57,8 +214,9 @@ method message*(p: LastFMPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
     if matchesCommand(m, s, "fm"):
         let discord = cast[OrcDiscord](b.services["Discord"].service)
         var (name, parts) = parseCommand(s, m)
+        name = ""
         if parts.len > 0:
-            case parts[0].toLowerAscii:
+            case parts[0].toLowerAscii
             of "set":
                 if parts.len < 2: return
                 let newuser = FMUser(id: m.user().id, fmname: parts[1])
@@ -77,104 +235,39 @@ method message*(p: LastFMPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
                     s.sendMessage(m.channel(), "Couldn't get collage")
                 let body = await res.body
                 asyncCheck discord.session.channelFileSendWithmessage(m.channel(), "collage_"&name&".png", body, "<@"&m.user().id&">")
-            of "topweekly":
-                if parts.len == 1:
-                    name = p.getUser(m.user().id).fmname
-                else: name = parts[1]
-                if name == "" or name == nil: return
-                let client = newAsyncHttpClient()
-                let url = "http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=7day&format=json&limit=100&user=" & name & "&api_key=" & p.apikey
-                let res = await client.get(url)
-                client.close()
-                if res == nil or res.code != HttpCode(200):
-                    s.sendMessage(m.channel(), "Error while looking up ")
-                    return
-                let body = await res.body
-                let node = parseJson(body)
-
-                var totalplaytime = 0
-                let tracks = node["toptracks"]["track"].elems
-                var i = 0
-                var fields: seq[EmbedField] = @[]
-                var thumb = EmbedThumbnail(url: tracks[0]["image"].elems[3]["#text"].str)
-                for track in tracks:
-                    if i < 5: 
-                        fields.add(EmbedField(
-                            name: track["@attr"]["rank"].str & ") " & track["playcount"].str & " plays",
-                            value: track["name"].str & " -- " & track["artist"]["name"].str,
-                            inline: false
-                        ))
-                    totalplaytime += track["duration"].str.parseInt
-                    inc(i)
-                let playtime = totalplaytime.fromSeconds.toTimeInterval
-                fields.add(EmbedField(
-                    name: "Total listening time",
-                    value: $playtime.hours & " hours " & $playtime.minutes & " minutes",
-                    inline: false
-                ))
-                let embed = Embed(
-                    author: EmbedAuthor(
-                        name: "Top 5 weekly tracks for " & name,
-                        url: "https://last.fm/user/" & encodeUrl(name),
-                        icon_url: "https://upload.wikimedia.org/wikipedia/commons/1/1a/Last.fm_icon.png"
-                    ),
-                    fields: fields,
-                    color: Color,
-                    thumbnail: thumb
-                )
-                asyncCheck discord.session.channelMessageSendEmbed(m.channel, embed)
-            else:
+            of "recent":
+                if parts.len >= 2: name = parts[1]
+                if name == "":
+                    let user = p.getUser(m.user.id)
+                    if user.fmname == "":
+                        s.sendMessage(m.channel, "No username set")
+                        return
+                    name = user.fmname
+                asyncCheck p.fmRecent(discord, name, m.user.id, m.channel, m.user.avatar)
+            of "now":
+                if parts.len >= 2: name = parts[1]
                 if name == "": 
                     let user = p.getUser(m.user().id)
                     if user.fmname == "":
-                        s.sendMessage(m.channel(), "No username to lookup")
+                        s.sendMessage(m.channel(), "No username set")
                         return
-                    
-                    let client = newAsyncHttpClient()
-                    let url = "http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=2&user=" & user.fmname & "&format=json&api_key=" & p.apikey
-                    let res = await client.get(url)
-                    client.close()
-                    if res == nil or res.code != HttpCode(200): 
-                        s.sendMessage(m.channel(), "No result")
-                        return
-                    
-                    let body = await res.body
-                    let node = parseJson(body)
-
-                    var fields: seq[EmbedField] = @[]
-                    var thumb = EmbedThumbnail(url: node["recenttracks"]["track"][0]["image"][3]["#text"].str)
-                    for elem in node["recenttracks"]["track"].elems:
-                        if elem.hasKey("@attr") and elem["@attr"].hasKey("nowplaying"):
-                            fields.add(EmbedField(
-                                name: "Currently playing", 
-                                value: elem["name"].str & " -- " & elem["artist"].fields["#text"].str, 
-                                inline: false
-                            ))
-                            continue
-                        fields.add(EmbedField(
-                            name: "Recently played", 
-                            value: elem["name"].str & " -- " & elem["artist"].fields["#text"].str, 
-                            inline: false
-                        ))
-                    
-                    if thumb.url == "" or thumb.url == nil:
-                        var iconurl = "http://i.imgur.com/jzZ5llc.png"
-                        if node["recenttracks"]["track"][0]["image"][3]["#text"].str != "":
-                            iconurl = node["recenttracks"]["track"][0]["image"][3]["#text"].str
-                        thumb = EmbedThumbnail(url: iconurl)
-
-                    let author = EmbedAuthor(
-                        name: "Last tracks for " & user.fmname, 
-                        url: "https://last.fm/user/" & encodeUrl(user.fmname), 
-                        icon_url: "https://upload.wikimedia.org/wikipedia/commons/1/1a/Last.fm_icon.png"
-                    )
-
-                    let embed = Embed(
-                        author: author,
-                        fields: fields,
-                        thumbnail: thumb,
-                        color: Color,
-                        footer: EmbedFooter(text: "Total tracks: " & node["recenttracks"]["@attr"]["total"].str)
-                    )
-
-                    asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
+                    name = user.fmname
+                asyncCheck p.fmNow(discord, name, m.user.id, m.channel, m.user.avatar)
+            of "top":
+                if parts.len < 2: return
+                if parts.len > 2: name = parts[3]
+                else: name = p.getUser(m.user.id).fmname
+                if name == "":
+                    s.sendMessage(m.channel, "No username set")
+                    return
+                case parts[1]
+                of "tracks":
+                    asyncCheck p.fmTopTracks(discord, name, m.user.id, m.channel)
+                of "albums":
+                    asyncCheck p.fmTopAlbums(discord, name, m.user.id, m.channel)
+                of "artists":
+                    asyncCheck p.fmTopArtists(discord, name, m.user.id, m.channel)
+                of "weekly":
+                    asyncCheck p.fmTopWeekly(discord, name, m.user.id, m.channel, m.user.avatar)
+                else: discard
+            else: discard

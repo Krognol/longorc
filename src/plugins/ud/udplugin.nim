@@ -12,7 +12,7 @@ method help*(p: UDPlugin, b: Bot, s: Service, m: OrcMessage): seq[string] =
     ]
 
 method message*(p: UDPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
-    if m.msgType() != mtMessageCreate or s.isMe(m) or m.user().bot:
+    if m.msgType() == mtMessageDelete or s.isMe(m) or m.user().bot:
         return
 
     let discord = cast[OrcDiscord](b.services["Discord"].service)
@@ -50,7 +50,7 @@ method message*(p: UDPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
             author: author,
             description: description,
             footer: footer,
-            color: Color,
+            color: await discord.userColor(m.channel, m.user.id),
                 fields: @[]
         )
         asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)

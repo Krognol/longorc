@@ -30,7 +30,7 @@ method help*(p: AnilistPlugin, b: Bot, s: Service, m: OrcMessage): seq[string] =
         commandHelp("character", " [name] ", "Anilist entry on your waifu")
     ]
 
-proc sendAnime*(d: OrcDiscord, channel: string, anime: JsonNode) {.async, gcsafe.} =
+proc sendAnime*(d: OrcDiscord, channel, user: string, anime: JsonNode) {.async, gcsafe.} =
     var author = EmbedAuthor(url: "https://anilist.co/anime/" & $anime["id"].num.int & "/" & encodeUrl(anime["title_romaji"].str))
     if anime["title_japanese"].str != nil:
         author.name = anime["title_japanese"].str
@@ -64,11 +64,11 @@ proc sendAnime*(d: OrcDiscord, channel: string, anime: JsonNode) {.async, gcsafe
         description: anime["description"].str.replace("<br>", "\n"),
         thumbnail: thumb,
         footer: EmbedFooter(text: "Anilist.co"),
-        color: Color
+        color: await d.userColor(channel, user)
     )
     asyncCheck d.session.channelMessageSendEmbed(channel, embed)
 
-proc sendManga(d: OrcDiscord, channel: string, manga: JsonNode) {.async, gcsafe.} =
+proc sendManga(d: OrcDiscord, channel, user: string, manga: JsonNode) {.async, gcsafe.} =
     var author = EmbedAuthor(url: "https://anilist.co/manga/" & $manga["id"].num.int & "/" & encodeUrl(manga["title_romaji"].str))
     if manga["title_japanese"].str != nil:
         author.name = manga["title_japanese"].str
@@ -99,11 +99,11 @@ proc sendManga(d: OrcDiscord, channel: string, manga: JsonNode) {.async, gcsafe.
         thumbnail: thumb,
         description: manga["description"].str.replace("<br>", "\n"),
         footer: EmbedFooter(text: "Anilist.co"),
-        color: Color
+        color: await d.userColor(channel, user)
     )
     asyncCheck d.session.channelMessageSendEmbed(channel, embed)
 
-proc sendCharacter(d: OrcDiscord, chan: string, character: JsonNode) {.async, gcsafe.} =
+proc sendCharacter(d: OrcDiscord, chan, user: string, character: JsonNode) {.async, gcsafe.} =
     var name = ""
     if character["name_first"].kind != JNull:
         name &= character["name_first"].str
@@ -127,7 +127,7 @@ proc sendCharacter(d: OrcDiscord, chan: string, character: JsonNode) {.async, gc
         image: img,
         description: info,
         footer: EmbedFooter(text: "Anilist.co"),
-        color: Color,
+        color: await d.userColor(chan, user),
         fields: @[]
     )
     asyncCheck d.session.channelMessageSendEmbed(chan, embed)
@@ -165,7 +165,7 @@ method message*(p: AnilistPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         if animes.kind != JNull and animes != nil:
             if animes.elems.len > 0:
                 let anime = animes.elems[0]
-                asyncCheck sendAnime(discord, m.channel(), anime)
+                asyncCheck sendAnime(discord, m.channel(), m.user.id, anime)
         return
     
     if matchesCommand(m, s, "manga"):
@@ -194,7 +194,7 @@ method message*(p: AnilistPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         if mangas.kind != JNull and mangas != nil:
             if mangas.elems.len > 0:
                 let manga = mangas.elems[0]
-                asyncCheck sendManga(discord, m.channel(), manga)
+                asyncCheck sendManga(discord, m.channel(), m.user.id, manga)
         return
     
     if matchesCommand(m, s, "character"):
@@ -223,4 +223,4 @@ method message*(p: AnilistPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         if characters.kind != JNull and characters != nil:
             if characters.elems.len > 0:
                 let character = characters.elems[0]
-                asyncCheck sendCharacter(discord, m.channel(), character)
+                asyncCheck sendCharacter(discord, m.channel(), m.user.id, character)

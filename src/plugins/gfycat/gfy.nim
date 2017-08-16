@@ -83,7 +83,7 @@ method message*(p: GfycatPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
                             name: node["username"].str,
                             url: node["url"].str
                         ),
-                        color: Color,
+                        color: await discord.userColor(m.channel, m.user.id),
                         fields: @[
                             EmbedField(name: "Views", value: node["views"].str, inline: true),
                             EmbedField(name: "Verified", value: $node["verified"].bval, inline: true),
@@ -119,7 +119,7 @@ method message*(p: GfycatPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
                     description: cat["description"].str,
                     url: "https://gfycat.com/"&cat["gfyName"].str,
                     image: EmbedImage(url: cat["gifUrl"].str),
-                    color: Color,
+                    color: await discord.userColor(m.channel, m.user.id),
                     fields: @[]
                 )
                 asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
@@ -135,7 +135,7 @@ method message*(p: GfycatPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
                     description: cat["description"].str,
                     url: "https://gfycat.com/"&cat["gfyName"].str,
                     image: EmbedImage(url: cat["gifUrl"].str),
-                    color: Color,
+                    color: await discord.userColor(m.channel, m.user.id),
                     fields: @[]
                 )
                 asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)

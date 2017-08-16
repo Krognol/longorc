@@ -1,4 +1,4 @@
-import ./longorc, discord, asyncdispatch, queues, tables
+import ./longorc, discord, asyncdispatch, queues, tables, algorithm
 
 type
     OrcDiscordUser* = ref object of OrcUser
@@ -24,7 +24,7 @@ method msgType*(m: OrcDiscordMessage): MessageType {.inline, gcsafe.} = m.msgtyp
 # Discord user methods
 method name*(u: OrcDiscordUser): string {.inline, gcsafe.} = u.user.username
 method id*(u: OrcDiscordUser): string {.inline, gcsafe.} = u.user.id
-method avatar*(u: OrcDiscordUser): string {.inline, gcsafe.} = u.user.avatar
+method avatar*(u: OrcDiscordUser): string {.inline, gcsafe.} = defaultAvatar(u.user)
 method discriminator*(u: OrcDiscordUser): string {.inline, gcsafe.} = u.user.discriminator
 method bot*(u: OrcDiscordUser): bool {.inline, gcsafe.} = u.user.bot
 
@@ -90,6 +90,27 @@ method userGiveRole*(s: OrcDiscord, guild, user, role: string) {.base, gcsafe, a
 
 method userTakeRole*(s: OrcDiscord, guild, user, role: string) {.base, gcsafe, async, inline.} =
     asyncCheck s.session.guildMemberRemoveRole(guild, user, role)
+
+method sortRoles(s: OrcDiscord, r: seq[Role]): seq[Role] {.base, gcsafe.} =
+    result = r
+    result.sort do (x, y: Role) -> int:
+        cmp(x.color, y.color)
+    result.reverse
+
+method userColor*(s: OrcDiscord, channel, user: string): Future[int] {.base, gcsafe, async.} =
+    let chan = await s.session.channel(channel)
+
+    let guild = await s.session.guild(chan.guild_id)
+
+    let mem = await s.session.guildMember(guild.id, user)
+    let roles = s.sortRoles(guild.roles)
+    result = 0
+    for role in roles:
+        for ur in mem.roles:
+            if role.id == ur:
+                if role.color != 0: 
+                    return role.color
+                    
 
 method messageServer*(s: OrcDiscord, m: OrcMessage): string {.base, gcsafe.} =
     let dm = cast[OrcDiscordMessage](m)

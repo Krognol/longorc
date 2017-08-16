@@ -55,9 +55,8 @@ proc commandHelp*(cs: string, args: string, h: string): string =
         result = cs & " " & args & " " & h
 
 proc matchesCommand*(m: OrcMessage, s: Service, command: string): bool =
-    if m.content == nil or 
-        m.content() == "" or 
-        (not m.content().startsWith(s.prefix())): return false
+    if m.content.isNilOrEmpty() or 
+        not m.content.startsWith(s.prefix()): return false
     
     var msg = m.content()[s.prefix.len..m.content.len].toLowerAscii()
     result = (msg == command) or msg.startsWith(command.toLowerAscii() & " ")
@@ -67,7 +66,7 @@ proc parseCommand*(s: Service, m: OrcMessage): (string, seq[string]) =
         var pref = s.prefix()
 
         if msg.startsWith(pref):
-            msg = substr(msg, len(pref), len(msg))
+            msg = msg[pref.high..msg.high]
 
         var rest = msg.splitWhitespace()
         if rest.len > 1:
@@ -76,10 +75,10 @@ proc parseCommand*(s: Service, m: OrcMessage): (string, seq[string]) =
         else:
             result = ("", rest)
 
-method name*(p: HelpPlugin): string = "help"
+method name*(p: HelpPlugin): string {.inline.} = "help"
 method load*(p: HelpPlugin) = return
 method save*(p: HelpPlugin) = return
-method help*(p: HelpPlugin, b: Bot, s: Service, m: OrcMessage): seq[string] = 
+method help*(p: HelpPlugin, b: Bot, s: Service, m: OrcMessage): seq[string] {.inline.} = 
     result = @[commandHelp("help", "[plugin name]", "displays help for a plugin")]
 
 method message*(p: HelpPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
@@ -94,6 +93,7 @@ method message*(p: HelpPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
 
         for _, plugin in b.services[s.name()].plugins:
             h = plugin.help(b,s,m)
+            h[0] = s.prefix() & h[0]
             if h != nil and h.len > 0:
                 helpSeq.add(h)
 
@@ -105,7 +105,7 @@ method message*(p: HelpPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
 
         if s.name() == "Discord":
             var ret = "```" & helpSeq.join("\n") & "```"
-            if ret.len >= 500: 
+            if ret.len >= 1000: 
                 ret = "All commands can be found here <https://github.com/Krognol/longorc#commands>"
             s.sendMessage(m.channel(), ret)
 
