@@ -1,4 +1,4 @@
-import ../../longorc, ../../orcdiscord,  discord, httpclient, asyncdispatch, json, cgi, tables
+import ../../longorc, ../../orcdiscord, discordnim, httpclient, asyncdispatch, json, cgi, tables
 
 type UDPlugin* = ref object of Plugin
 
@@ -27,7 +27,7 @@ method message*(p: UDPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         let res = await client.get("http://api.urbandictionary.com/v0/define?term=" & encodeUrl(word))
         client.close()
         
-        if res == nil: 
+        if not res.code.is2xx: 
             s.sendMessage(m.channel(), "Couldn't find definiton for " & word)
             return
         let body = await res.body()
@@ -46,12 +46,13 @@ method message*(p: UDPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
         var description = first.fields["definition"].str 
         if description.len > 1000:
             description = description[0..800] & "... Read the full definition at urbandictionary.com" & "\n```\n" & first.fields["example"].str & "\n```"
+        let color = await discord.userColor(m.channel, m.user.id)
         let embed = Embed(
             author: author,
             description: description,
             footer: footer,
-            color: await discord.userColor(m.channel, m.user.id),
-                fields: @[]
+            color: color,
+            fields: @[]
         )
         asyncCheck discord.session.channelMessageSendEmbed(m.channel(), embed)
         

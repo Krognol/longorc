@@ -1,4 +1,4 @@
-import ../../longorc, ../../orcdiscord, asyncdispatch, httpclient, json, tables, random, discord, times, strutils
+import ../../longorc, ../../orcdiscord, asyncdispatch, httpclient, json, tables, random, discordnim, times, strutils
 
 type 
     GfycatPlugin* = ref object of Plugin

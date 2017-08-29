@@ -1,14 +1,15 @@
-import ./longorc, discord, asyncdispatch, queues, tables, algorithm
+import ./longorc, discordnim, asyncdispatch, queues, tables, algorithm, sequtils
 
 type
     OrcDiscordUser* = ref object of OrcUser
-        user: discord.User
+        user: User
     OrcDiscordMessage* = ref object of OrcMessage
         discord*: OrcDiscord
-        msg*: discord.Message
+        msg*: Message
         msgtype*: MessageType
     OrcDiscord* = ref object of Service
         session*: Session
+        prefix: string
 
 const 
     Color* = 0x57ed78
@@ -91,26 +92,23 @@ method userGiveRole*(s: OrcDiscord, guild, user, role: string) {.base, gcsafe, a
 method userTakeRole*(s: OrcDiscord, guild, user, role: string) {.base, gcsafe, async, inline.} =
     asyncCheck s.session.guildMemberRemoveRole(guild, user, role)
 
-method sortRoles(s: OrcDiscord, r: seq[Role]): seq[Role] {.base, gcsafe.} =
-    result = r
-    result.sort do (x, y: Role) -> int:
-        cmp(x.color, y.color)
-    result.reverse
-
 method userColor*(s: OrcDiscord, channel, user: string): Future[int] {.base, gcsafe, async.} =
     let chan = await s.session.channel(channel)
 
     let guild = await s.session.guild(chan.guild_id)
 
     let mem = await s.session.guildMember(guild.id, user)
-    let roles = s.sortRoles(guild.roles)
+    var roles = guild.roles
+    roles.sort do (x, y: Role) -> int: cmp(x.color, y.color)
+    roles = roles.filter do (x: Role) -> bool: x.color != 0
+    roles.reverse
     result = 0
+    # Might want to cache this
     for role in roles:
         for ur in mem.roles:
             if role.id == ur:
-                if role.color != 0: 
-                    return role.color
-                    
+                return role.color
+
 
 method messageServer*(s: OrcDiscord, m: OrcMessage): string {.base, gcsafe.} =
     let dm = cast[OrcDiscordMessage](m)
@@ -126,10 +124,11 @@ method isModerator*(s: OrcDiscord, m: OrcMessage): bool {.inline.} =
         ((perms and permManageGuild) == permManageGuild)
 
 method sendMessage*(s: OrcDiscord, channel: string, message: string) {.inline.} = asyncCheck s.session.channelMessageSend(channel, message)
-method prefix*(s: OrcDiscord): string {.inline.} = ".!"
+method prefix*(s: OrcDiscord): string {.inline.} = s.prefix
 
-proc newDiscordService*(token: string): OrcDiscord {.inline.} =
+proc newDiscordService*(token, prefix: string): OrcDiscord {.inline.} =
     var ses = newSession(token)
     result = OrcDiscord(
         session: ses,
+        prefix: prefix
     )

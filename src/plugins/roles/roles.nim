@@ -1,4 +1,4 @@
-import ../../longorc, ../../orcdiscord, discord, asyncdispatch, locks, marshal, strutils, tables
+import ../../longorc, ../../orcdiscord, discordnim, asyncdispatch, locks, marshal, strutils, tables
 
 type 
     Role = object

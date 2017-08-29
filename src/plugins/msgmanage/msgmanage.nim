@@ -1,4 +1,4 @@
-import ../../longorc, ../../orcdiscord,  discord, asyncdispatch, strutils, tables
+import ../../longorc, ../../orcdiscord, discordnim, asyncdispatch, strutils, tables
 
 type Msgmanager* = ref object of Plugin
 

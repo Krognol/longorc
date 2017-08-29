@@ -1,4 +1,4 @@
-import ../../longorc, ../../orcdiscord,  asyncdispatch, httpclient, discord, cgi, tables, json, marshal, strutils, re
+import ../../longorc, ../../orcdiscord, asyncdispatch, httpclient, discordnim, cgi, tables, json, marshal, strutils, re
 
 const AnilistUrl = "https://anilist.co/api/"
 
@@ -58,13 +58,14 @@ proc sendAnime*(d: OrcDiscord, channel, user: string, anime: JsonNode) {.async, 
         fields.add(EmbedField(name: "Synonyms", value: syns.join(", "), inline: true))
     if anime["source"].kind != JNull:
         fields.add(EmbedField(name: "Source", value: anime["source"].str, inline: true))
+    let clr = await d.userColor(channel, user)
     let embed = Embed(
         author: author,
         fields: fields,
         description: anime["description"].str.replace("<br>", "\n"),
         thumbnail: thumb,
         footer: EmbedFooter(text: "Anilist.co"),
-        color: await d.userColor(channel, user)
+        color: clr
     )
     asyncCheck d.session.channelMessageSendEmbed(channel, embed)
 
@@ -93,13 +94,14 @@ proc sendManga(d: OrcDiscord, channel, user: string, manga: JsonNode) {.async, g
             if elem.str != "":
                 syns.add(elem.str)
         fields.add(EmbedField(name: "Synonyms", value: syns.join(", "), inline: true))
+    let clr = await d.userColor(channel, user)
     let embed = Embed(
         author: author,
         fields: fields,
         thumbnail: thumb,
         description: manga["description"].str.replace("<br>", "\n"),
         footer: EmbedFooter(text: "Anilist.co"),
-        color: await d.userColor(channel, user)
+        color: clr
     )
     asyncCheck d.session.channelMessageSendEmbed(channel, embed)
 
@@ -122,12 +124,13 @@ proc sendCharacter(d: OrcDiscord, chan, user: string, character: JsonNode) {.asy
         info = info.replace(re"""(~![\w\d\s():,.'\"-]+!~)""", "")
     if info.len > 1000:
         info = info[0..600] & "...\n\nRead the full bio at the character profile"
+    let clr = await d.userColor(chan, user)
     let embed = Embed(
         author: author,
         image: img,
         description: info,
         footer: EmbedFooter(text: "Anilist.co"),
-        color: await d.userColor(chan, user),
+        color: clr,
         fields: @[]
     )
     asyncCheck d.session.channelMessageSendEmbed(chan, embed)

@@ -1,4 +1,4 @@
-import ../../longorc, ../../orcdiscord,  discord, strutils, times, asyncdispatch, tables, os, httpclient, re
+import ../../longorc, ../../orcdiscord, discordnim, strutils, times, asyncdispatch, tables, os, httpclient, re
 
 type
     UserInfoPlugin* = ref object of Plugin

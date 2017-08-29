@@ -62,7 +62,7 @@ method help*(p: MarkovPlugin, b: Bot, s: Service, m: OrcMessage): seq[string] =
     ]
 
 method message*(p: MarkovPlugin, b: Bot, s: Service, m: OrcMessage) {.async.} =
-    if m.msgType() != mtMessageCreate or s.isMe(m) or m.user().bot:
+    if m.msgType() == mtMessageDelete or s.isMe(m) or m.user().bot:
         return
 
     if matchesCommand(m, s, "markov"):
